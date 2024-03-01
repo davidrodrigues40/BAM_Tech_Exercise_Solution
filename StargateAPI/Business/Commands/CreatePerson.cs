@@ -42,6 +42,12 @@ namespace StargateAPI.Business.Commands
 
                 return Task.CompletedTask;
             }
+            catch (BadHttpRequestException e)
+            {
+                _logger.LogError(e, _logHelper.CreateBadRequestLogPrefix(_className, methodName), request);
+
+                throw;
+            }
             catch (Exception e)
             {
                 _logger.LogError(e, _logHelper.CreateExceptionLogPrefix(_className, methodName), request);
@@ -85,6 +91,12 @@ namespace StargateAPI.Business.Commands
                 {
                     Id = newPerson.Id
                 };
+            }
+            catch (BadHttpRequestException e)
+            {
+                _logger.LogError(e, _logHelper.CreateBadRequestLogPrefix(_className, methodName), request);
+
+                throw;
             }
             catch (Exception e)
             {
