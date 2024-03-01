@@ -28,7 +28,7 @@ namespace StargateUnitTests.Business.Commands
             // Assert
             Assert.That(_preProcessor, Is.Not.Null);
             Assert.ThrowsAsync<BadHttpRequestException>(() => _preProcessor.Process(_request, new CancellationToken()));
-            Assert.That(_logHelper.Invocations.Count, Is.EqualTo(1));
+            Assert.That(_logHelper.Invocations, Has.Count.EqualTo(1));
         }
 
         [Test]
