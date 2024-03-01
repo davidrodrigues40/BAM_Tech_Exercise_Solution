@@ -1,5 +1,4 @@
-﻿using Dapper;
-using MediatR;
+﻿using MediatR;
 using MediatR.Pipeline;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
@@ -53,22 +52,19 @@ namespace StargateAPI.Business.Commands
         }
         public async Task<CreateAstronautDutyResult> Handle(CreateAstronautDuty request, CancellationToken cancellationToken)
         {
-            // change to Entity Framework Query or
-            // parameterize query
-            // both will prevent SQL injection.
 
-            var query = $"SELECT * FROM [Person] WHERE \'{request.Name}\' = Name";
+            var astronaut = await _context.Astronauts
+                .Include(x => x.Person)
+                .FirstAsync(z => z.Person.Name == request.Name) ?? throw new BadHttpRequestException("Bad Request");
 
-            var person = await _context.Connection.QueryFirstOrDefaultAsync<Person>(query);
 
-            query = $"SELECT * FROM [AstronautDetail] WHERE {person.Id} = PersonId";
-
-            var astronautDetail = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDetail>(query);
+            var astronautDetail = await _context.AstronautDetails
+                .FirstOrDefaultAsync(z => z.AstronautId == astronaut.Id);
 
             if (astronautDetail == null)
             {
                 astronautDetail = new AstronautDetail();
-                astronautDetail.AstronautId = person.Id;
+                astronautDetail.AstronautId = astronaut.Id;
                 astronautDetail.CurrentDutyTitle = request.DutyTitle;
                 astronautDetail.CurrentRank = request.Rank;
                 astronautDetail.CareerStartDate = request.DutyStartDate.Date;
@@ -91,9 +87,8 @@ namespace StargateAPI.Business.Commands
                 _context.AstronautDetails.Update(astronautDetail);
             }
 
-            query = $"SELECT * FROM [AstronautDuty] WHERE {person.Id} = PersonId Order By DutyStartDate Desc";
-
-            var astronautDuty = await _context.Connection.QueryFirstOrDefaultAsync<AstronautDuty>(query);
+            var astronautDuty = await _context.AstronautDuties
+                .FirstOrDefaultAsync(z => z.AstronautId == astronaut.Id && z.DutyEndDate == null);
 
             if (astronautDuty != null)
             {
@@ -103,7 +98,7 @@ namespace StargateAPI.Business.Commands
 
             var newAstronautDuty = new AstronautDuty()
             {
-                AstronautId = person.Id,
+                AstronautId = astronaut.Id,
                 Rank = request.Rank,
                 DutyTitle = request.DutyTitle,
                 DutyStartDate = request.DutyStartDate.Date,

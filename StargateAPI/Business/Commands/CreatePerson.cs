@@ -2,6 +2,7 @@
 using MediatR.Pipeline;
 using Microsoft.EntityFrameworkCore;
 using StargateAPI.Business.Data;
+using StargateAPI.Business.Helpers;
 using StargateAPI.Controllers;
 
 namespace StargateAPI.Business.Commands
@@ -18,45 +19,79 @@ namespace StargateAPI.Business.Commands
     public class CreatePersonPreProcessor : IRequestPreProcessor<CreatePerson>
     {
         private readonly StargateContext _context;
-        public CreatePersonPreProcessor(StargateContext context)
+        private readonly ILogHelper _logHelper;
+        private readonly ILogger _logger;
+        private const string _className = "CreatePersonPreProcessor";
+
+        public CreatePersonPreProcessor(StargateContext context, ILogHelper logHelper, ILogger logger)
         {
             _context = context;
+            _logHelper = logHelper;
+            _logger = logger;
         }
         public Task Process(CreatePerson request, CancellationToken cancellationToken)
         {
-            var person = _context.People.AsNoTracking().FirstOrDefault(z => z.Name == request.Name);
+            const string methodName = "Process";
+            try
+            {
+                Person? person = _context.People.AsNoTracking().FirstOrDefault(z => z.Name == request.Name);
 
-            if (person is not null) throw new BadHttpRequestException("Bad Request");
+                if (person is not null) throw new BadHttpRequestException("Bad Request");
 
-            return Task.CompletedTask;
+                _logger.LogInformation(_logHelper.CreateSuccessLogPrefix(_className, methodName), request);
+
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, _logHelper.CreateExceptionLogPrefix(_className, methodName), request);
+
+                return Task.FromException(e);
+            }
         }
     }
 
     public class CreatePersonHandler : IRequestHandler<CreatePerson, CreatePersonResult>
     {
         private readonly StargateContext _context;
+        private readonly ILogHelper _logHelper;
+        private readonly ILogger _logger;
+        private const string _className = "CreatePersonHandler";
 
-        public CreatePersonHandler(StargateContext context)
+        public CreatePersonHandler(StargateContext context, ILogHelper logHelper, ILogger logger)
         {
             _context = context;
+            _logHelper = logHelper;
+            _logger = logger;
         }
+
         public async Task<CreatePersonResult> Handle(CreatePerson request, CancellationToken cancellationToken)
         {
-
-            var newPerson = new Person()
+            const string methodName = "Handle";
+            try
             {
-                Name = request.Name
-            };
+                var newPerson = new Person()
+                {
+                    Name = request.Name
+                };
 
-            await _context.People.AddAsync(newPerson);
+                await _context.People.AddAsync(newPerson);
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            return new CreatePersonResult()
+                _logger.LogInformation(_logHelper.CreateSuccessLogPrefix(_className, methodName), request);
+
+                return new CreatePersonResult()
+                {
+                    Id = newPerson.Id
+                };
+            }
+            catch (Exception e)
             {
-                Id = newPerson.Id
-            };
+                _logger.LogError(e, _logHelper.CreateExceptionLogPrefix(_className, methodName), request);
 
+                throw;
+            }
         }
     }
 
