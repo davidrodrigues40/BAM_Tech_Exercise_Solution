@@ -20,14 +20,12 @@ namespace StargateAPI.Business.Commands
     {
         private readonly StargateContext _context;
         private readonly ILogHelper _logHelper;
-        private readonly ILogger _logger;
         private const string _className = "CreatePersonPreProcessor";
 
-        public CreatePersonPreProcessor(StargateContext context, ILogHelper logHelper, ILogger logger)
+        public CreatePersonPreProcessor(StargateContext context, ILogHelper logHelper)
         {
             _context = context;
             _logHelper = logHelper;
-            _logger = logger;
         }
         public Task Process(CreatePerson request, CancellationToken cancellationToken)
         {
@@ -38,19 +36,19 @@ namespace StargateAPI.Business.Commands
 
                 if (person is not null) throw new BadHttpRequestException("Bad Request");
 
-                _logger.LogInformation(_logHelper.CreateSuccessLogPrefix(_className, methodName), request);
+                _logHelper.LogSuccess(_className, methodName);
 
                 return Task.CompletedTask;
             }
             catch (BadHttpRequestException e)
             {
-                _logger.LogError(e, _logHelper.CreateBadRequestLogPrefix(_className, methodName), request);
+                _logHelper.LogBadRequest(_className, methodName, e);
 
                 throw;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, _logHelper.CreateExceptionLogPrefix(_className, methodName), request);
+                _logHelper.LogException(_className, methodName, e);
 
                 return Task.FromException(e);
             }
@@ -61,14 +59,12 @@ namespace StargateAPI.Business.Commands
     {
         private readonly StargateContext _context;
         private readonly ILogHelper _logHelper;
-        private readonly ILogger _logger;
         private const string _className = "CreatePersonHandler";
 
-        public CreatePersonHandler(StargateContext context, ILogHelper logHelper, ILogger logger)
+        public CreatePersonHandler(StargateContext context, ILogHelper logHelper)
         {
             _context = context;
             _logHelper = logHelper;
-            _logger = logger;
         }
 
         public async Task<CreatePersonResult> Handle(CreatePerson request, CancellationToken cancellationToken)
@@ -85,7 +81,7 @@ namespace StargateAPI.Business.Commands
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation(_logHelper.CreateSuccessLogPrefix(_className, methodName), request);
+                _logHelper.LogSuccess(_className, methodName);
 
                 return new CreatePersonResult()
                 {
@@ -94,13 +90,13 @@ namespace StargateAPI.Business.Commands
             }
             catch (BadHttpRequestException e)
             {
-                _logger.LogError(e, _logHelper.CreateBadRequestLogPrefix(_className, methodName), request);
+                _logHelper.LogBadRequest(_className, methodName, e);
 
                 throw;
             }
             catch (Exception e)
             {
-                _logger.LogError(e, _logHelper.CreateExceptionLogPrefix(_className, methodName), request);
+                _logHelper.LogException(_className, methodName, e);
 
                 throw;
             }

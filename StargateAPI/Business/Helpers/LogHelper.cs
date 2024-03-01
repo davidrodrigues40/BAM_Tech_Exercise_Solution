@@ -2,30 +2,36 @@
 {
     public interface ILogHelper
     {
-        string CreateSuccessLogPrefix(string className, string methodName);
-        string CreateExceptionLogPrefix(string className, string methodName);
-        string CreateBadRequestLogPrefix(string className, string methodName);
+        void LogSuccess(string className, string methodName);
+        void LogException(string className, string methodName, Exception e);
+        void LogBadRequest(string className, string methodName, BadHttpRequestException e);
     }
     public class LogHelper : ILogHelper
     {
-        public string CreateSuccessLogPrefix(string className, string methodName)
+        private readonly ILogger _logger;
+        private const string _logPrefix = "{className}: {methodName} - {message}";
+
+        public LogHelper(ILogger logger)
         {
-            return CreateLogPrefix(className, methodName, "Success");
+            _logger = logger;
         }
 
-        public string CreateExceptionLogPrefix(string className, string methodName)
+        public void LogSuccess(string className, string methodName)
         {
-            return CreateLogPrefix(className, methodName, "Exception");
+            const string message = "Success";
+            _logger.LogInformation(_logPrefix, className, methodName, message);
         }
 
-        public string CreateBadRequestLogPrefix(string className, string methodName)
+        public void LogException(string className, string methodName, Exception e)
         {
-            return CreateLogPrefix(className, methodName, "Bad Request");
+            string message = "Exception";
+            _logger.LogCritical(e, _logPrefix, className, methodName, message);
         }
 
-        private string CreateLogPrefix(string className, string methodName, string message)
+        public void LogBadRequest(string className, string methodName, BadHttpRequestException e)
         {
-            return $"{className}: {methodName} - {message}";
+            string message = "Bad Request";
+            _logger.LogError(e, _logPrefix, className, methodName, message);
         }
     }
 }
